@@ -1,40 +1,43 @@
 
 import React from 'react';
-import { Button, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 export default function HomeScreen() {
   return (
      <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
       {/* navbar */}
       <View style={styles.navbar}>
         <View style={styles.Saldo} >
-          <Text style={{ fontSize: 25, fontWeight: 'bold', color: 'white' }}>Rp 100.000</Text>
-          <Text style={{ color: 'white' }}>total Saldo Anda</Text>
+          <Text style={{ fontSize: 22, fontWeight: 'bold', color: 'white' }}>Rp 100.000</Text>
+          <Text style={{ color: '#f2f6f2ff' }}>total Saldo Anda</Text>
         </View>
         <View style={styles.kontainerisi}>
           <View style={styles.isi}>
-            <Text style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Rp 100.000</Text>
-            <Text style={{ color: 'white' }}>Pendapatan</Text>
+              <Text style={{ color: '#f2f6f2ff' }}>Pendapatan</Text>
+            <Text style={{ fontSize: 19, fontWeight: 'bold', color: 'white' }}>Rp 100.000</Text>
+          
+          </View>
+           <View style={styles.isi}>
+            <Text style={{ color:'#f2f6f2ff' }}>investasi</Text>
+            <Text style={{ fontSize: 19, fontWeight: 'bold', color: 'white' }}>Rp 100.000</Text>
           </View>
           <View style={styles.isi}>
-            <Text style={{ fontSize: 20, fontWeight: 'bold', color: 'red' }}>Rp 100.000</Text>
-            <Text style={{ color: 'white' }}>Pengeluaran</Text>
+            <Text style={{ color: '#f2f6f2ff' }}>Pengeluaran</Text>
+            <Text style={{ fontSize: 19, fontWeight: 'bold', color: 'red' }}>Rp 100.000</Text>
           </View>
-          <View style={styles.isi}>
-            <Text style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Rp 100.000</Text>
-            <Text style={{ color: 'white' }}>investasi</Text>
-          </View>
+         
         </View>
         {/* akhir navbar */}
 
-        {/* buton tambah transaksi */}
-        <View style={styles.buttonContainer}>
-          <Text style={styles.buttonText}>Tambah Transaksi</Text>
-          <Button title="Tambah" onPress={() => {}} />
-        </View>
+       
       </View>
 
       <View style={styles.container}>
-        <Text style={{ color: 'white' }}>Isi konten di sini</Text>
+         {/* buton tambah transaksi */}
+        <View style={styles.buttonContainer}>
+           <TouchableOpacity style={styles.fullButton} onPress={() => {}}>
+          <Text style={styles.buttonText}>+ Tambah Transaksi</Text>
+        </TouchableOpacity>
+         </View>
       </View>
     </View>
   );
@@ -43,13 +46,7 @@ export default function HomeScreen() {
 
 
 const styles = StyleSheet.create({
-  container:{
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    padding: 20,
-    backgroundColor: 'white',
-  },
+ 
   text: {
     color: 'black',
   },
@@ -61,7 +58,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     borderBottomWidth: 1,
     borderBottomColor: '#e2e2e2',
-    borderRadius: 10,
+    borderRadius: 20,
     paddingTop: 15,
     gap: 30,
   },
@@ -87,12 +84,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: '90%',
+    width: '80%',    
     padding: 10,
-    backgroundColor: '#4caf50',
-    borderRadius: 5,
+    backgroundColor: '#f2f6f2ff',
+    borderRadius: 20,
+    overflow: 'hidden',
   },
   buttonText: {
-    color: 'white',
+    color: 'black',
   },
-});
+   container:{
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    padding: 20,
+    backgroundColor: 'white',
+  },
+    fullButton: {
+      backgroundColor:'#85f185ff', // hijau
+      width: '100%',              // lebar penuh container
+      paddingVertical: 12,
+      borderRadius: 10,
+      alignItems: 'center',
+    },
+  });
