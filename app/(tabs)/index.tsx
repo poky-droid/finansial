@@ -3,7 +3,7 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 export default function HomeScreen() {
   return (
-     <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+     <View style={{ flex: 1, backgroundColor: '#CFFFDC' }}>
       {/* navbar */}
       <View style={styles.navbar}>
         <View style={styles.Saldo} >
@@ -40,6 +40,26 @@ export default function HomeScreen() {
            <TouchableOpacity style={styles.filterButton} onPress={() => {}}>
              <Text style={styles.buttonText}>filter Transaksi</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* daftar transaksi */}
+        <View style={{ marginTop: 20, width: '100%' }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Daftar Transaksi</Text>
+          <View style={{ padding: 15, backgroundColor: '#f9f9f9', borderRadius: 10, marginBottom: 10 }}>
+            <Text style={{ fontSize: 16, fontWeight: 'bold' }}>Transaksi 1</Text>
+            <Text>Detail transaksi 1</Text>
+            <Text style={{ color: 'green', marginTop: 5 }}>+ Rp 50.000</Text>
+          </View>
+          <View style={{ padding: 15, backgroundColor: '#f9f9f9', borderRadius: 10, marginBottom: 10 }}>
+            <Text style={{ fontSize: 16, fontWeight: 'bold' }}>Transaksi 2</Text>
+            <Text>Detail transaksi 2</Text>
+            <Text style={{ color: 'red', marginTop: 5 }}>- Rp 20.000</Text>
+          </View>
+          <View style={{ padding: 15, backgroundColor: '#f9f9f9', borderRadius: 10, marginBottom: 10 }}>
+            <Text style={{ fontSize: 16, fontWeight: 'bold' }}>Transaksi 3</Text>
+            <Text>Detail transaksi 3</Text>
+            <Text style={{ color: 'green', marginTop: 5 }}>+ Rp 70.000</Text>
+          </View>
 
 
          </View>
