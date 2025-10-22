@@ -59,7 +59,6 @@ export default function HomeScreen() {
         {/* 1. Header dan Saldo Total */}
         <View style={styles.headerContainer}>
           <Feather name="menu" size={24} color="white" />
-          <Text style={styles.appName}>Financify</Text>
           <Ionicons name="notifications-outline" size={24} color="white" />
         </View>
 
