@@ -9,6 +9,7 @@ const BUDGET_DATA = [
   { id: '2', category: 'Transportasi', limit: 1500000, spent: 850000, icon: 'car' },
   { id: '3', category: 'Hiburan', limit: 800000, spent: 950000, icon: 'game-controller' }, // Melebihi batas
   { id: '4', category: 'Tagihan', limit: 1000000, spent: 900000, icon: 'receipt' },
+  { id: '5', category: 'Investasi', limit: 1000000, spent: 900000, icon: 'trending-up' },
 ];
 
 const totalBudget = BUDGET_DATA.reduce((sum, item) => sum + item.limit, 0);
