@@ -2,7 +2,19 @@ import { AntDesign, Feather, Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-// --- Data Contoh (Simulasi data) ---
+// --- FUNGSI FORMATTING ---
+function formatRupiah(amount) {
+  const options = {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  };
+  const formatter = new Intl.NumberFormat('id-ID', options);
+  return formatter.format(amount);
+}
+
+// --- DATA CONTOH ---
 const totalBalance = 12450.75;
 const financialSummary = {
   income: 5200.00,
@@ -15,13 +27,36 @@ const recentTransactions = [
   { id: '3', type: 'expense', category: 'Dinner', description: 'Restaurant', amount: -25.50, date: 'Oct 25' },
 ];
 
-// --- Komponen Individual ---
+// --- DATA TERFORMAT (Siap Render) ---
+const formattedTotalBalance = formatRupiah(totalBalance);
 
-const SummaryCard = ({ title, value, color }) => (
+const formattedSummary = {  
+  income: formatRupiah(financialSummary.income),
+  expense: formatRupiah(financialSummary.expense),
+  remaining: formatRupiah(financialSummary.remaining),
+};
+
+const formattedTransactions = recentTransactions.map(transaction => {
+  // Gunakan Math.abs() sebelum memformat (misalnya Rp50,00, bukan Rp-50,00)
+  const formattedAmount = formatRupiah(Math.abs(transaction.amount));
+  
+  // Menggabungkan data mentah dan data yang sudah diformat
+  return {
+    ...transaction,
+    // amount_formatted: menyimpan string Rp12.450,75
+    amount_formatted: formattedAmount, 
+    // amount: menyimpan angka mentah -50.00
+  };
+});
+
+// --- Komponen Individual (DIPERBAIKI) ---
+
+const SummaryCard = ({ title, value, formattedValue, color }) => (
   <View style={styles.summaryCard}>
     <Text style={styles.summaryTitle}>{title}</Text>
+    {/* Menggunakan formattedValue yang sudah berupa string Rupiah */}
     <Text style={[styles.summaryValue, { color: color }]}>
-      {value < 0 ? `-Rp${Math.abs(value).toFixed(2)}` : `Rp${value.toFixed(2)}`}
+      {formattedValue}
     </Text>
   </View>
 );
@@ -31,18 +66,23 @@ const TransactionItem = ({ transaction }) => {
   const amountColor = isExpense ? '#E74C3C' : '#2ECC71';
   const iconName = isExpense ? 'arrowdown' : 'arrowup';
 
+  // Ambil string Rupiah yang sudah diformat
+  const displayAmount = transaction.amount_formatted; 
+  
   return (
     <View style={styles.transactionItem}>
       <View style={styles.transactionIconContainer}>
-        <AntDesign name={iconName} size={20} color={isExpense ? '#E74C3C' : '#2ECC71'} />
+        <AntDesign name={iconName} size={20} color={amountColor} />
       </View>
       <View style={styles.transactionDetails}>
         <Text style={styles.transactionCategory}>{transaction.category}</Text>
         <Text style={styles.transactionDescription}>{transaction.description}</Text>
       </View>
       <View style={styles.transactionAmountDate}>
+        {/* Tanda +/- ditambahkan di sini secara manual untuk tampilan */}
         <Text style={[styles.transactionAmount, { color: amountColor }]}>
-          {isExpense ? '' : '+'}Rp{transaction.amount.toFixed(2)}
+          {isExpense ? '-' : '+'}
+          {displayAmount.replace('Rp', '')} {/* Hapus simbol 'Rp' dari string agar tidak terulang */}
         </Text>
         <Text style={styles.transactionDate}>{transaction.date}</Text>
       </View>
@@ -51,7 +91,7 @@ const TransactionItem = ({ transaction }) => {
 };
 
 
-// --- Layar Home Utama ---
+// --- Layar Home Utama (DIPERBAIKI) ---
 export default function HomeScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F8F8' }}>
@@ -64,16 +104,33 @@ export default function HomeScreen() {
 
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>Total Saldo</Text>
-          <Text style={styles.balanceValue}>Rp{totalBalance.toFixed(2)}</Text>
+          {/* Menggunakan formattedTotalBalance */}
+          <Text style={styles.balanceValue}>{formattedTotalBalance}</Text>
         </View>
 
         {/* 2. Ringkasan Keuangan */}
         <View style={styles.summaryContainer}>
           <Text style={styles.sectionTitle}>Ringkasan Keuangan Bulan Ini</Text>
           <View style={styles.summaryCardsRow}>
-            <SummaryCard title="Pemasukan" value={financialSummary.income} color="#2ECC71" />
-            <SummaryCard title="Pengeluaran" value={financialSummary.expense} color="#E74C3C" />
-            <SummaryCard title="Sisa Dana" value={financialSummary.remaining} color="#3498DB" />
+            {/* Menggunakan formattedSummary */}
+            <SummaryCard 
+              title="Pemasukan" 
+              value={financialSummary.income} 
+              formattedValue={formattedSummary.income} 
+              color="#2ECC71" 
+            />
+            <SummaryCard 
+              title="Pengeluaran" 
+              value={financialSummary.expense} 
+              formattedValue={formattedSummary.expense} 
+              color="#E74C3C" 
+            />
+            <SummaryCard 
+              title="Sisa Dana" 
+              value={financialSummary.remaining} 
+              formattedValue={formattedSummary.remaining} 
+              color="#3498DB" 
+            />
           </View>
         </View>
 
@@ -81,12 +138,13 @@ export default function HomeScreen() {
         <View style={styles.recentTransactionsContainer}>
           <Text style={styles.sectionTitle}>Transaksi Terbaru</Text>
           <View style={styles.transactionsList}>
-            {recentTransactions.map((item) => (
+            {/* Menggunakan formattedTransactions */}
+            {formattedTransactions.map((item) => (
               <TransactionItem key={item.id} transaction={item} />
             ))}
           </View>
           <TouchableOpacity style={styles.viewAllButton}>
-             <Text style={styles.viewAllButtonText}>Lihat Semua Transaksi</Text>
+              <Text style={styles.viewAllButtonText}>Lihat Semua Transaksi</Text>
           </TouchableOpacity>
         </View>
         
@@ -96,32 +154,23 @@ export default function HomeScreen() {
       <TouchableOpacity style={styles.fabButton} onPress={() => console.log('Tambah Transaksi')}>
         <AntDesign name="plus" size={30} color="#FFFFFF" />
       </TouchableOpacity>
-      
-      {/* Catatan: Navigasi Tab Bawah (Bottom Tabs) biasanya diimplementasikan
-          di komponen Navigator utama, bukan di sini. */}
     </SafeAreaView>
   );
 }
 
-// --- StyleSheet ---
+// --- StyleSheet (Tidak ada perubahan pada styling) ---
 const styles = StyleSheet.create({
+  // ... (Gaya-gaya Anda yang tidak berubah)
   container: {
-    paddingBottom: 80, // Ruang untuk FAB dan Navigasi Bawah
+    paddingBottom: 80, 
   },
-  
-  // Header dan Saldo
   headerContainer: {
-    backgroundColor: '#1E2B47', // Warna Aksen Gelap
+    backgroundColor: '#1E2B47', 
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
-  },
-  appName: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: 'bold',
   },
   balanceCard: {
     backgroundColor: '#1E2B47',
@@ -135,16 +184,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 5,
   },
-  balanceValue: {
-    color: '#2ECC71', // Hijau untuk Saldo
+  balanceValue: { // Gaya ini sekarang menampilkan string Rupiah yang sudah diformat
+    color: '#2ECC71',
     fontSize: 36,
     fontWeight: 'bold',
   },
-
-  // Ringkasan Keuangan
   summaryContainer: {
     padding: 20,
-    marginTop: -20, // Tumpang tindih dengan balanceCard
+    marginTop: -20,
     backgroundColor: '#F8F8F8',
   },
   sectionTitle: {
@@ -175,12 +222,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     textAlign: 'center',
   },
-  summaryValue: {
+  summaryValue: { // Gaya ini sekarang menampilkan string Rupiah yang sudah diformat
     fontSize: 14,
     fontWeight: 'bold',
   },
-
-  // Transaksi Terbaru
   recentTransactionsContainer: {
     paddingHorizontal: 20,
     paddingTop: 10,
@@ -239,8 +284,6 @@ const styles = StyleSheet.create({
     color: '#3498DB',
     fontWeight: '600',
   },
-
-  // FAB
   fabButton: {
     position: 'absolute',
     width: 60,
@@ -249,7 +292,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     right: 30,
     bottom: 30,
-    backgroundColor: '#3498DB', // Warna Aksen Biru
+    backgroundColor: '#3498DB', 
     borderRadius: 30,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

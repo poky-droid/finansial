@@ -21,7 +21,7 @@ const pieChartData = [
   { name: 'Makanan', percentage: 35, color: '#E74C3C', legendFontColor: '#7F7F7F', legendFontSize: 14 },
   { name: 'Tagihan', percentage: 25, color: '#3498DB', legendFontColor: '#7F7F7F', legendFontSize: 14 },
   { name: 'Transportasi', percentage: 15, color: '#F1C40F', legendFontColor: '#7F7F7F', legendFontSize: 14 },
-  { name: 'Lainnya', percentage: 25, color: '#9B59B6', legendFontColor: '#7F7F7F', legendFontSize: 14 },
+  { name: 'ivestasi', percentage: 25, color: '#9B59B6', legendFontColor: '#7F7F7F', legendFontSize: 14 },
 ];
 
 // --- Komponen Grafik Placeholder ---
