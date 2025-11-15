@@ -232,6 +232,18 @@ const AddDataModal = ({ visible, onClose, onSave }: AddDataModalProps) => {
                 placeholderTextColor="#BBB"
               />
             </View>
+            <Text style={styles.label}>Jenis Transaksi</Text>
+            <View style={styles.inputWrapper}>
+              <AntDesign name="tags" size={18} color="#999" />
+              <TextInput
+                style={styles.inputField}
+                placeholder="Masukkan jenis transaksi"
+                value={name}
+                onChangeText={setName}
+                placeholderTextColor="#BBB"
+              />
+            </View>
+            
 
             {/* Jumlah */}
             <Text style={styles.label}>Jumlah</Text>
