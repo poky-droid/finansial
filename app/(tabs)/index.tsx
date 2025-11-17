@@ -1,5 +1,6 @@
+import { addData, getData, getSummary, type dataType, type jenisTransaksi } from '@/lib/data';
 import { AntDesign, Feather, Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 // --- FUNGSI FORMATTING ---
@@ -13,43 +14,8 @@ function formatRupiah(amount: number): string {
   const formatter = new Intl.NumberFormat('id-ID', options);
   return formatter.format(amount);
 }
-
-// --- DATA CONTOH ---
-const totalBalance = 12450.75;
-const financialSummary = {
-  income: 5200.00,
-  expense: 2750.00,
-  remaining: 2450.75,
-};
-const recentTransactions = [
-  { id: '1', type: 'expense' as const, category: 'Groceries', description: 'Supermarket', amount: -50.00, date: 'Oct 26' },
-  { id: '2', type: 'income' as const, category: 'Salary', description: 'Monthly Paycheck', amount: 3500.00, date: 'Oct 26' },
-  { id: '3', type: 'expense' as const, category: 'Dinner', description: 'Restaurant', amount: -25.50, date: 'Oct 25' },
-];
-
 // --- DATA TERFORMAT (Siap Render) ---
-const formattedTotalBalance = formatRupiah(totalBalance);
-
-const formattedSummary = {  
-  income: formatRupiah(financialSummary.income),
-  expense: formatRupiah(financialSummary.expense),
-  remaining: formatRupiah(financialSummary.remaining),
-};
-
-const formattedTransactions = recentTransactions.map(transaction => {
-  // Gunakan Math.abs() sebelum memformat (misalnya Rp50,00, bukan Rp-50,00)
-  const formattedAmount = formatRupiah(Math.abs(transaction.amount));
-  
-  // Menggabungkan data mentah dan data yang sudah diformat
-  return {
-    ...transaction,
-    // amount_formatted: menyimpan string Rp12.450,75
-    amount_formatted: formattedAmount, 
-    // amount: menyimpan angka mentah -50.00
-  };
-});
-
-// --- Komponen Individual (DIPERBAIKI) ---
+// Note: formattedSummary dan formattedTransactions akan dibuat di dalam HomeScreen sebagai state// --- Komponen Individual (DIPERBAIKI) ---
 
 interface SummaryCardProps {
   title: string;
@@ -72,14 +38,8 @@ const SummaryCard = ({ title, value, formattedValue, color }: SummaryCardProps) 
   </View>
 );
 
-interface Transaction {
-  id: string;
-  type: 'expense' | 'income';
-  category: string;
-  description: string;
-  amount: number;
+interface Transaction extends dataType {
   amount_formatted?: string;
-  date: string;
 }
 
 interface TransactionItemProps {
@@ -87,14 +47,14 @@ interface TransactionItemProps {
 }
 
 const TransactionItem = ({ transaction }: TransactionItemProps) => {
-  const isExpense = transaction.type === 'expense';
-  const amountColor = isExpense ? '#E74C3C' : '#2ECC71';
-  const iconName = isExpense ? 'arrow-down' : 'arrow-up';
-  const bgColor = isExpense ? '#E74C3C15' : '#2ECC7115';
-  const badgeBg = isExpense ? '#E74C3C10' : '#2ECC7110';
+  const isExpense = transaction.jenisTransaksi === 'Pengeluaran';
+  const isInvestasi = transaction.jenisTransaksi === 'Investasi';
+  const amountColor = isExpense || isInvestasi ? '#E74C3C' : '#2ECC71';
+  const iconName = isExpense || isInvestasi ? 'arrow-down' : 'arrow-up';
+  const badgeBg = isExpense || isInvestasi ? '#E74C3C10' : '#2ECC7110';
 
   // Ambil string Rupiah yang sudah diformat
-  const displayAmount = transaction.amount_formatted || ''; 
+  const displayAmount = transaction.amount_formatted || formatRupiah(transaction.jumlah);
   
   return (
     <View style={styles.transactionItem}>
@@ -102,18 +62,18 @@ const TransactionItem = ({ transaction }: TransactionItemProps) => {
         <AntDesign name={iconName as any} size={20} color={amountColor} />
       </View>
       <View style={styles.transactionDetails}>
-        <Text style={styles.transactionCategory}>{transaction.category}</Text>
-        <Text style={styles.transactionDescription}>{transaction.description}</Text>
+        <Text style={styles.transactionCategory}>{transaction.jenisTransaksi}</Text>
+        <Text style={styles.transactionDescription}>{transaction.kategori}</Text>
       </View>
       <View style={styles.transactionAmountDate}>
         {/* Tanda +/- ditambahkan di sini secara manual untuk tampilan */}
         <View style={[styles.amountBadge, { backgroundColor: `${amountColor}15` }]}>
           <Text style={[styles.transactionAmount, { color: amountColor }]}>
-            {isExpense ? '-' : '+'}
+            {isExpense || isInvestasi ? '-' : '+'}
             {displayAmount.replace('Rp', '')} 
           </Text>
         </View>
-        <Text style={styles.transactionDate}>{transaction.date}</Text>
+        <Text style={styles.transactionDate}>{transaction.catatan}</Text>
       </View>
     </View>
   );
@@ -121,29 +81,80 @@ const TransactionItem = ({ transaction }: TransactionItemProps) => {
 
 // --- Tipe Transaksi Options ---
 const TRANSACTION_TYPES = [
-  { value: 'pemasukan', label: 'Pemasukan', icon: 'arrow-up', color: '#2ECC71' },
-  { value: 'pengeluaran', label: 'Pengeluaran', icon: 'arrow-down', color: '#E74C3C' },
-  { value: 'investasi', label: 'Investasi', icon: 'line-chart', color: '#F39C12' },
+  { value: 'Pemasukan', label: 'Pemasukan', icon: 'arrow-up', color: '#2ECC71' },
+  { value: 'Pengeluaran', label: 'Pengeluaran', icon: 'arrow-down', color: '#E74C3C' },
+  { value: 'Investasi', label: 'Investasi', icon: 'line-chart', color: '#F39C12' },
 ] as const;
+
+// --- Kategori Options ---
+const CATEGORY_OPTIONS = {
+  Pemasukan: [
+    { label: 'Gaji', value: 'Gaji' },
+    { label: 'Bonus', value: 'Bonus' },
+    { label: 'Freelance', value: 'Freelance' },
+    { label: 'Investasi Dividen', value: 'Investasi Dividen' },
+    { label: 'Lainnya', value: 'Lainnya' },
+  ],
+  Pengeluaran: [
+    { label: 'Makanan & Minuman', value: 'Makanan & Minuman' },
+    { label: 'Transportasi', value: 'Transportasi' },
+    { label: 'Hiburan', value: 'Hiburan' },
+    { label: 'Tagihan', value: 'Tagihan' },
+    { label: 'Lainnya', value: 'Lainnya' },
+  ],
+  Investasi: [
+    { label: 'Saham', value: 'Saham' },
+    { label: 'Crypto', value: 'Crypto' },
+    { label: 'Emas', value: 'Emas' },
+    { label: 'Reksa Dana', value: 'Reksa Dana' },
+    { label: 'Lainnya', value: 'Lainnya' },
+  ],
+} as const;
 
 // --- Komponen Modal Tambah Transaksi ---
 interface AddDataModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (data: { name: string; amount: string }) => void;
+  onSave: (data: { jenisTransaksi: jenisTransaksi; kategori: string; jumlah: number; catatan: string }) => void;
 }
 
 const AddDataModal = ({ visible, onClose, onSave }: AddDataModalProps) => {
-  const [name, setName] = useState('');
-  const [amount, setAmount] = useState('');
-  const [jenisTransaksi, setJenisTransaksi] = useState('');
+  const [kategori, setKategori] = useState('');
+  const [jumlah, setJumlah] = useState('');
+  const [catatan, setCatatan] = useState('');
+  const [jenisTransaksi, setJenisTransaksi] = useState<jenisTransaksi | ''>('');
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+
+  const getAvailableCategories = () => {
+    if (!jenisTransaksi) return [];
+    return CATEGORY_OPTIONS[jenisTransaksi as keyof typeof CATEGORY_OPTIONS] || [];
+  };
+
+  const handleSelectCategory = (selectedKategori: string) => {
+    setKategori(selectedKategori);
+    setShowCategoryDropdown(false);
+  };
+
+  const handleChangeJenisTransaksi = (type: jenisTransaksi) => {
+    setJenisTransaksi(type);
+    setKategori(''); // Reset kategori saat jenis transaksi berubah
+    setShowCategoryDropdown(false);
+  };
 
   const handleSave = () => {
-    if (!name || !amount || !jenisTransaksi) return alert('Isi semua field!');
-    onSave({ name, amount });
-    setName('');
-    setAmount('');
+    if (!kategori || !jumlah || !jenisTransaksi) return alert('Isi semua field!');
+    
+    onSave({ 
+      jenisTransaksi: jenisTransaksi as jenisTransaksi,
+      kategori,
+      jumlah: parseFloat(jumlah),
+      catatan
+    });
+    setKategori('');
+    setJumlah('');
+    setCatatan('');
     setJenisTransaksi('');
+    setShowCategoryDropdown(false);
     onClose();
   };
 
@@ -202,7 +213,7 @@ const AddDataModal = ({ visible, onClose, onSave }: AddDataModalProps) => {
                       isActive && styles.transactionTypeButtonActive,
                       isActive && { backgroundColor: `${type.color}20`, borderColor: type.color }
                     ]}
-                    onPress={() => setJenisTransaksi(type.value)}
+                    onPress={() => handleChangeJenisTransaksi(type.value as jenisTransaksi)}
                   >
                     <AntDesign 
                       name={type.icon as any} 
@@ -220,30 +231,55 @@ const AddDataModal = ({ visible, onClose, onSave }: AddDataModalProps) => {
               })}
             </View>
 
-            {/* Keterangan */}
-            <Text style={styles.label}>Keterangan</Text>
+            {/* Kategori */}
+            <Text style={styles.label}>Kategori</Text>
+            <TouchableOpacity 
+              style={styles.inputWrapper}
+              onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
+              disabled={!jenisTransaksi}
+            >
+              <AntDesign name="tags" size={18} color={jenisTransaksi ? "#999" : "#CCC"} />
+              <Text style={[styles.inputField, { color: kategori ? '#333' : '#BBB' }]}>
+                {kategori || 'Pilih kategori'}
+              </Text>
+              <AntDesign name={showCategoryDropdown ? 'up' : 'down'} size={16} color="#999" />
+            </TouchableOpacity>
+
+            {/* Category Dropdown Menu */}
+            {showCategoryDropdown && jenisTransaksi && (
+              <View style={styles.dropdownMenu}>
+                {getAvailableCategories().map((cat) => (
+                  <TouchableOpacity
+                    key={cat.value}
+                    style={styles.dropdownItem}
+                    onPress={() => handleSelectCategory(cat.value)}
+                  >
+                    <Text style={[
+                      styles.dropdownItemText,
+                      kategori === cat.value && styles.dropdownItemTextActive
+                    ]}>
+                      {cat.label}
+                    </Text>
+                    {kategori === cat.value && (
+                      <AntDesign name="check" size={16} color="#2ECC71" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {/* Catatan */}
+            <Text style={styles.label}>Catatan</Text>
             <View style={styles.inputWrapper}>
-              <AntDesign name="tags" size={18} color="#999" />
+              <AntDesign name="file-text" size={18} color="#999" />
               <TextInput
                 style={styles.inputField}
-                placeholder="Masukkan keterangan transaksi"
-                value={name}
-                onChangeText={setName}
+                placeholder="Masukkan catatan"
+                value={catatan}
+                onChangeText={setCatatan}
                 placeholderTextColor="#BBB"
               />
             </View>
-            <Text style={styles.label}>Jenis Transaksi</Text>
-            <View style={styles.inputWrapper}>
-              <AntDesign name="tags" size={18} color="#999" />
-              <TextInput
-                style={styles.inputField}
-                placeholder="Masukkan jenis transaksi"
-                value={name}
-                onChangeText={setName}
-                placeholderTextColor="#BBB"
-              />
-            </View>
-            
 
             {/* Jumlah */}
             <Text style={styles.label}>Jumlah</Text>
@@ -253,8 +289,8 @@ const AddDataModal = ({ visible, onClose, onSave }: AddDataModalProps) => {
                 style={styles.inputField}
                 placeholder="0"
                 keyboardType="numeric"
-                value={amount}
-                onChangeText={setAmount}
+                value={jumlah}
+                onChangeText={setJumlah}
                 placeholderTextColor="#BBB"
               />
             </View>
@@ -285,13 +321,59 @@ const AddDataModal = ({ visible, onClose, onSave }: AddDataModalProps) => {
 
 // --- Layar Home Utama (DIPERBAIKI) ---
 export default function HomeScreen() {
+  const [totalBalance, setTotalBalance] = useState(0);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [summary, setSummary] = useState({ totalSaldo: 0, totalPemasukan: 0, totalPengeluaran: 0, totalInvestasi: 0 });
   const [modalVisible, setModalVisible] = useState(false);
 
-    const handleAddTransaction = (data: { name: string; amount: string }) => {
-      console.log('Transaksi baru ditambahkan:', data);
-      // TODO: Simpan data transaksi ke state atau storage
-      setModalVisible(false);
+  // Load data dari AsyncStorage saat komponen mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const allTransactions = await getData();
+        const summaryData = await getSummary();
+        
+        // Format transactions dengan amount_formatted
+        const formattedTransactions = allTransactions.map(tx => ({
+          ...tx,
+          amount_formatted: formatRupiah(tx.jumlah),
+        })) as Transaction[];
+        
+        setTransactions(formattedTransactions);
+        setSummary(summaryData);
+        setTotalBalance(summaryData.totalSaldo);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
     };
+    
+    loadData();
+  }, []);
+
+  const handleAddTransaction = async (data: { jenisTransaksi: jenisTransaksi; kategori: string; jumlah: number; catatan: string }) => {
+    try {
+      const updatedTransactions = await addData(data.jenisTransaksi, data.kategori, data.jumlah, data.catatan);
+      const updatedSummary = await getSummary();
+      
+      // Format transactions dengan amount_formatted
+      const formattedTransactions = updatedTransactions.map(tx => ({
+        ...tx,
+        amount_formatted: formatRupiah(tx.jumlah),
+      })) as Transaction[];
+      
+      setTransactions(formattedTransactions);
+      setSummary(updatedSummary);
+      setTotalBalance(updatedSummary.totalSaldo);
+      
+      console.log('Transaksi baru ditambahkan:', data);
+    } catch (error) {
+      console.error('Error adding transaction:', error);
+      alert('Gagal menambahkan transaksi');
+    }
+  };
+
+  // Hitung total aset: investasi + (pemasukan - pengeluaran)
+  const totalAssets = summary.totalInvestasi + summary.totalSaldo;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F8F8' }}>
@@ -304,32 +386,37 @@ export default function HomeScreen() {
 
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>Total Saldo</Text>
-          {/* Menggunakan formattedTotalBalance */}
-          <Text style={styles.balanceValue}>{formattedTotalBalance}</Text>
+          {/* Menggunakan totalBalance yang dimuat dari AsyncStorage */}
+          <Text style={styles.balanceValue}>{formatRupiah(totalBalance)}</Text>
+          
+          <Text style={[styles.balanceLabel, { marginTop: 16 }]}>Total Aset</Text>
+          <Text style={[styles.balanceValue, { color: '#F39C12' }]}>
+            {formatRupiah(totalAssets)}
+          </Text>
         </View>
 
         {/* 2. Ringkasan Keuangan */}
         <View style={styles.summaryContainer}>
           <Text style={styles.sectionTitle}>Ringkasan Keuangan Bulan Ini</Text>
           <View style={styles.summaryCardsRow}>
-            {/* Menggunakan formattedSummary */}
+            {/* Menggunakan summary state */}
             <SummaryCard 
               title="Pemasukan" 
-              value={financialSummary.income} 
-              formattedValue={formattedSummary.income} 
+              value={summary.totalPemasukan} 
+              formattedValue={formatRupiah(summary.totalPemasukan)} 
               color="#2ECC71" 
             />
             <SummaryCard 
               title="Pengeluaran" 
-              value={financialSummary.expense} 
-              formattedValue={formattedSummary.expense} 
+              value={summary.totalPengeluaran} 
+              formattedValue={formatRupiah(summary.totalPengeluaran)} 
               color="#E74C3C" 
             />
             <SummaryCard 
-              title="Sisa Dana" 
-              value={financialSummary.remaining} 
-              formattedValue={formattedSummary.remaining} 
-              color="#3498DB" 
+              title="Investasi" 
+              value={summary.totalInvestasi} 
+              formattedValue={formatRupiah(summary.totalInvestasi)} 
+              color="#F39C12" 
             />
           </View>
         </View>
@@ -338,10 +425,16 @@ export default function HomeScreen() {
         <View style={styles.recentTransactionsContainer}>
           <Text style={styles.sectionTitle}>Transaksi Terbaru</Text>
           <View style={styles.transactionsList}>
-            {/* Menggunakan formattedTransactions */}
-            {formattedTransactions.map((item) => (
-              <TransactionItem key={item.id} transaction={item} />
-            ))}
+            {/* Menggunakan transactions state */}
+            {transactions.length > 0 ? (
+              transactions.map((item) => (
+                <TransactionItem key={item.id_transaksi} transaction={item} />
+              ))
+            ) : (
+              <Text style={{ textAlign: 'center', paddingVertical: 20, color: '#999' }}>
+                Belum ada transaksi
+              </Text>
+            )}
           </View>
           <TouchableOpacity style={styles.viewAllButton}>
               <Text style={styles.viewAllButtonText}>Lihat Semua Transaksi</Text>
@@ -755,5 +848,37 @@ const styles = StyleSheet.create({
       fontWeight: '600',
       color: '#666',
       textAlign: 'center',
+    },
+    dropdownMenu: {
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1.5,
+      borderColor: '#E0E7FF',
+      borderRadius: 12,
+      marginTop: -12,
+      marginBottom: 16,
+      overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    dropdownItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: '#F5F5F5',
+    },
+    dropdownItemText: {
+      fontSize: 15,
+      color: '#666',
+      flex: 1,
+    },
+    dropdownItemTextActive: {
+      color: '#2ECC71',
+      fontWeight: '700',
     },
 });
