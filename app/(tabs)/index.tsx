@@ -1,15 +1,16 @@
-import { addData, getData, getSummary, type dataType, type jenisTransaksi } from '@/lib/data';
 import { AntDesign, Feather, Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { DatePicker } from '../../components/DatePickerModal';
+import { addData, getData, getSummary, type dataType, type jenisTransaksi } from '../../lib/data';
 
 // --- FUNGSI FORMATTING ---
 function formatRupiah(amount: number): string {
   const options: Intl.NumberFormatOptions = {
     style: 'currency',
     currency: 'IDR',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   };
   const formatter = new Intl.NumberFormat('id-ID', options);
   return formatter.format(amount);
@@ -56,6 +57,16 @@ const TransactionItem = ({ transaction }: TransactionItemProps) => {
   // Ambil string Rupiah yang sudah diformat
   const displayAmount = transaction.amount_formatted || formatRupiah(transaction.jumlah);
   
+  // Format date untuk tampilan
+  const formatDisplayDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch {
+      return dateString;
+    }
+  };
+  
   return (
     <View style={styles.transactionItem}>
       <View style={[styles.transactionIconContainer, { backgroundColor: badgeBg }]}>
@@ -73,7 +84,7 @@ const TransactionItem = ({ transaction }: TransactionItemProps) => {
             {displayAmount.replace('Rp', '')} 
           </Text>
         </View>
-        <Text style={styles.transactionDate}>{transaction.catatan}</Text>
+        <Text style={styles.transactionDate}>{formatDisplayDate(transaction.date)}</Text>
       </View>
     </View>
   );
@@ -115,7 +126,7 @@ const CATEGORY_OPTIONS = {
 interface AddDataModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (data: { jenisTransaksi: jenisTransaksi; kategori: string; jumlah: number; catatan: string }) => void;
+  onSave: (data: { jenisTransaksi: jenisTransaksi; kategori: string; jumlah: number; catatan: string; date?: string }) => void;
 }
 
 const AddDataModal = ({ visible, onClose, onSave }: AddDataModalProps) => {
@@ -124,6 +135,8 @@ const AddDataModal = ({ visible, onClose, onSave }: AddDataModalProps) => {
   const [catatan, setCatatan] = useState('');
   const [jenisTransaksi, setJenisTransaksi] = useState<jenisTransaksi | ''>('');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const getAvailableCategories = () => {
     if (!jenisTransaksi) return [];
@@ -148,13 +161,15 @@ const AddDataModal = ({ visible, onClose, onSave }: AddDataModalProps) => {
       jenisTransaksi: jenisTransaksi as jenisTransaksi,
       kategori,
       jumlah: parseFloat(jumlah),
-      catatan
+      catatan,
+      date: selectedDate
     });
     setKategori('');
     setJumlah('');
     setCatatan('');
     setJenisTransaksi('');
     setShowCategoryDropdown(false);
+    setSelectedDate(new Date().toISOString().split('T')[0]);
     onClose();
   };
 
@@ -281,6 +296,27 @@ const AddDataModal = ({ visible, onClose, onSave }: AddDataModalProps) => {
               />
             </View>
 
+            {/* Tanggal Transaksi */}
+            <Text style={styles.label}>Tanggal Transaksi</Text>
+            <TouchableOpacity 
+              style={styles.dateDisplayButton}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <AntDesign name="calendar" size={20} color="#2ECC71" />
+              <View style={styles.dateDisplayContent}>
+                <Text style={styles.dateDisplayLabel}>Pilih Tanggal</Text>
+                <Text style={styles.dateDisplayValue}>
+                  {new Date(selectedDate).toLocaleDateString('id-ID', {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </Text>
+              </View>
+              <AntDesign name="right" size={16} color="#999" />
+            </TouchableOpacity>
+
             {/* Jumlah */}
             <Text style={styles.label}>Jumlah</Text>
             <View style={styles.inputWrapper}>
@@ -314,6 +350,14 @@ const AddDataModal = ({ visible, onClose, onSave }: AddDataModalProps) => {
           </View>
         </View>
       </View>
+
+      {/* Date Picker Modal */}
+      <DatePicker
+        visible={showDatePicker}
+        value={selectedDate}
+        onChange={setSelectedDate}
+        onClose={() => setShowDatePicker(false)}
+      />
     </Modal>
   );
 };
@@ -350,9 +394,9 @@ export default function HomeScreen() {
     loadData();
   }, []);
 
-  const handleAddTransaction = async (data: { jenisTransaksi: jenisTransaksi; kategori: string; jumlah: number; catatan: string }) => {
+  const handleAddTransaction = async (data: { jenisTransaksi: jenisTransaksi; kategori: string; jumlah: number; catatan: string; date?: string }) => {
     try {
-      const updatedTransactions = await addData(data.jenisTransaksi, data.kategori, data.jumlah, data.catatan);
+      const updatedTransactions = await addData(data.jenisTransaksi, data.kategori, data.jumlah, data.catatan, data.date);
       const updatedSummary = await getSummary();
       
       // Format transactions dengan amount_formatted
@@ -880,5 +924,31 @@ const styles = StyleSheet.create({
     dropdownItemTextActive: {
       color: '#2ECC71',
       fontWeight: '700',
+    },
+    dateDisplayButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1.5,
+      borderColor: '#E0E7FF',
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 14,
+      marginBottom: 16,
+      backgroundColor: '#F8FAFF',
+      gap: 12,
+    },
+    dateDisplayContent: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    dateDisplayLabel: {
+      fontSize: 12,
+      color: '#999',
+      marginBottom: 4,
+    },
+    dateDisplayValue: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: '#1E2B47',
     },
 });

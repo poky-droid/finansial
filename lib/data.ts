@@ -7,6 +7,7 @@ export interface dataType{
     kategori: string;
     jumlah: number;
     catatan: string;
+    date: string;
 }
 
 export interface summaryType{
@@ -36,7 +37,8 @@ export async function addData(
   jenisTransaksi: jenisTransaksi, 
   kategori: string, 
   jumlah: number, 
-  catatan: string
+  catatan: string,
+  date?: string
 ) {
   if (jumlah < 0) throw new Error("Jumlah tidak boleh negatif");
   if (!["Pemasukan", "Pengeluaran", "Investasi"].includes(jenisTransaksi)) {
@@ -49,6 +51,7 @@ export async function addData(
     kategori,
     jumlah,
     catatan,
+    date: date || new Date().toISOString().split('T')[0],
   };
   existingData.push(newData);
   await save(storageKey, existingData);
@@ -57,10 +60,36 @@ export async function addData(
 
 
 export async function hapusdata(id_transaksi: number) {
-  const existingData = await getData();
-  const filteredData = existingData.filter(d => d.id_transaksi !== id_transaksi);
-  await save(storageKey, filteredData);
-  return filteredData;
+  try {
+    console.log('=== MULAI HAPUS DATA ===');
+    console.log('ID yang akan dihapus:', id_transaksi);
+    
+    const existingData = await getData();
+    console.log('Total data sebelum hapus:', existingData.length);
+    console.log('Data sebelum hapus:', existingData);
+    
+    const filteredData = existingData.filter(d => d.id_transaksi !== id_transaksi);
+    console.log('Total data setelah filter:', filteredData.length);
+    console.log('Data setelah filter:', filteredData);
+    
+    if (existingData.length === filteredData.length) {
+      console.warn('⚠️  DATA TIDAK BERUBAH - ID tidak ditemukan?');
+    }
+    
+    // Simpan langsung ke storage
+    await save(storageKey, filteredData);
+    console.log('✅ Data berhasil disimpan ke storage');
+    
+    // Verifikasi data yang disimpan
+    const verifyData = await getData();
+    console.log('Verifikasi data setelah hapus:', verifyData);
+    console.log('=== SELESAI HAPUS DATA ===\n');
+    
+    return filteredData;
+  } catch (error) {
+    console.error('❌ Error dalam hapusdata:', error);
+    throw error;
+  }
 }
 
 export async function editData(
@@ -68,7 +97,8 @@ export async function editData(
   jenisTransaksi: jenisTransaksi, 
   kategori: string, 
   jumlah: number, 
-  catatan: string
+  catatan: string,
+  date?: string
 ) {
   if (jumlah < 0) throw new Error("Jumlah tidak boleh negatif");
   if (!["Pemasukan", "Pengeluaran", "Investasi"].includes(jenisTransaksi)) {
@@ -79,11 +109,12 @@ export async function editData(
   const index = existingData.findIndex(d => d.id_transaksi === id_transaksi);
   if (index !== -1) {
     existingData[index] = {
-      id_transaksi: existingData[index].id_transaksi,
+      ...existingData[index],
       jenisTransaksi,
       kategori,
       jumlah,
       catatan,
+      date: date || existingData[index].date,
     };
     await save(storageKey, existingData);
   }
