@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
   },
   balanceLabel: {
     color: '#B0BEC5',
-    fontSize: 14,
+    fontSize: 11,
     marginBottom: 8,
     fontWeight: '500',
   },
